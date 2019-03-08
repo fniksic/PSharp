@@ -13,16 +13,17 @@
     <TargetFrameworks>net46</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(OS)'=='UNIX'">
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+  <!--<PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net46'">
+  </PropertyGroup>-->
+  <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net46'">
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="1.2.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="1.2.2" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.1.0-beta1-19156-03" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.1.0-beta1-19156-03" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.1.0-beta1-19156-03" />
   </ItemGroup>
 </Project>
