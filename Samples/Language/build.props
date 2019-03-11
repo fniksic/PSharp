@@ -1,6 +1,9 @@
 <Project>
   <Import Project="..\..\Common\build.props" />
-  <Import Project="..\..\bin\netcoreapp2.1\PSharp.AsProcess.targets" />
+  <Import Condition="'$(OS)' == 'Windows_NT'"
+          Project="..\..\bin\net46\PSharp.vs2017.targets" />
+  <Import Condition="'$(OS)' == 'UNIX'"
+          Project="..\..\bin\netcoreapp2.1\PSharp.AsProcess.targets" />
   <PropertyGroup Condition="'$(OS)'=='Windows_NT'">
     <TargetFrameworks>netcoreapp2.1;net46;net45</TargetFrameworks>
   </PropertyGroup>
