@@ -4,18 +4,19 @@
   </ItemGroup>
   <PropertyGroup>
     <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateToolOutput</CoreCompileDependsOn>
+    <SyntaxRewriterAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">.\PSharpSyntaxRewriterProcess.dll</SyntaxRewriterAssembly>
+    <SyntaxRewriterAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">.\PSharpSyntaxRewriterProcess.exe</SyntaxRewriterAssembly>
   </PropertyGroup>
-  <UsingTask TaskName="Microsoft.PSharp.RewriterAsSeparateProcess" AssemblyFile=".\PSharpSyntaxRewriterProcess.exe" />
+  
+  <UsingTask TaskName="Microsoft.PSharp.RewriterToolTask"
+             AssemblyFile="$(SyntaxRewriterAssembly)" />
 
-  <Target Name="GenerateToolOutput">
-
-    <RewriterAsSeparateProcess
+  <Target Name="GenerateToolOutput" BeforeTargets="CoreCompile">
+    <RewriterToolTask
         InputFiles="@(PSharp)"
+        CSharpVersion="$(LangVersion)"
         OutputFiles="@(PSharp->'$(IntermediateOutputPath)%(FileName)%(Extension).cs')">
-
       <Output TaskParameter="OutputFiles" ItemName="Compile" />
-
-    </RewriterAsSeparateProcess>
+    </RewriterToolTask>
   </Target>
-
 </Project>

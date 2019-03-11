@@ -6,22 +6,18 @@
     <AssemblyName>PSharpSyntaxRewriterProcess</AssemblyName>
     <RootNamespace>PSharpSyntaxRewriterProcess</RootNamespace>
     <TargetFrameworks>net46</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netcoreapp2.1</TargetFrameworks>
     <PackageTags>syntax;rewriter;psharp</PackageTags>
     <OutputPath>..\..\..\bin\</OutputPath>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(OS)'=='Windows_NT'">
-    <TargetFrameworks>net46</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(OS)'=='UNIX'">
-    <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
-  </PropertyGroup>
-  <!--<PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-  </PropertyGroup>-->
+  
   <ItemGroup>
     <ProjectReference Include="..\..\..\Source\LanguageServices\LanguageServices.csproj" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="15.9.20" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.9.20" PrivateAssets="All" />
   </ItemGroup>
+  
   <ItemGroup>
     <None Include="PSharp.AsProcess.targets">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -30,7 +26,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Framework" Version="14.3.0" />
-  </ItemGroup>
+  
+  <!--<Target Name="MakeOutputExecutableOnUnix"
+          AfterTargets="CoreCompile"
+          Condition="'$(OS)' == 'UNIX'">
+    <Exec Command="chmod +x '$(IntermediateOutputPath)''$(AssemblyName)'.dll" />
+  </Target>-->
 </Project>
