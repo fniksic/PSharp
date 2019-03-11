@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <SyntaxRewriterAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">.\PSharpSyntaxRewriterProcess.dll</SyntaxRewriterAssembly>
-    <SyntaxRewriterAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">.\PSharpSyntaxRewriterProcess.exe</SyntaxRewriterAssembly>
+    <SyntaxRewriterAssembly Condition="'$(OS)' != 'Windows_NT'">.\PSharpSyntaxRewriterProcess.dll</SyntaxRewriterAssembly>
+    <SyntaxRewriterAssembly Condition="'$(OS)' == 'Windows_NT'">.\PSharpSyntaxRewriterProcess.exe</SyntaxRewriterAssembly>
   </PropertyGroup>
   <UsingTask TaskName="Microsoft.PSharp.RewriterToolTask" AssemblyFile="$(SyntaxRewriterAssembly)" />
   <Target Name="GenerateToolOutput" BeforeTargets="CoreCompile">
