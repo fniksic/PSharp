@@ -200,5 +200,10 @@ namespace Microsoft.PSharp
             Log.LogMessage("Generated command line: {0}", commandLine);
             return commandLine;
         }
+
+        protected override bool SkipTaskExecution()
+        {
+            return InputFiles == null;
+        }
     }
 }
