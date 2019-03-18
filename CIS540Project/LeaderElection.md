@@ -42,7 +42,11 @@ The initial implementation is located in the folder `CIS540Project/Ring`. As bef
 
 **Your task (10 points):**
 
-1. Study the code to familiarize yourself with the syntax and the structure of a P# program.
+1. Study the code of `SimpleRing` to familiarize yourself with the syntax and the structure of a P# program.
+
+2. Build the program and run it. Then test it with `PSharpTester`. The tester should report that there are no bugs in the program.
+
+3. Now study the code of `Ring`. Everything is the same as in `SimpleRing`, except for the file `Node.psharp`.
 
 2. The key part of the $O(n \log n)$ algorithm described above is missing. Specifically, look at the method `HandleMessage()` in the file `Node.psharp` and add the missing part.
 
@@ -50,11 +54,11 @@ The initial implementation is located in the folder `CIS540Project/Ring`. As bef
 
 **Technical instructions:**
 
-1. If you open the folder in Visual Studio Code, you can build the program by executing `Terminal->Run Build Task...`. You can run the program by executing `Debug->Start Debugging`.
+1. For either `SimpleRing` or `Ring`, if you open the corresponding folder in Visual Studio Code, you can build the program by executing `Terminal->Run Build Task...`. You can run the program by executing `Debug->Start Debugging`.
 
-2. You can build the program in the terminal by executing `dotnet build` in the folder `CIS540Project/Ring`. You can run it by executing `dotnet run` or `dotnet bin/Debug/netcoreapp2.1/Ring.dll`.
+2. You can build the program in the terminal by executing `dotnet build` in the program's folder. You can run it by executing `dotnet run` or `dotnet bin/Debug/netcoreapp2.1/Ring.dll`.
 
-3. To test the program, you need to run the tester utility from the terminal. The tester is the executable file `bin/netcoreapp2.1/PSharpTester.dll`. If you are located in the folder `CIS540Project/Ring`, execute the following:
+3. To test the program, you need to run the tester utility from the terminal. The tester is the executable file `bin/netcoreapp2.1/PSharpTester.dll`. If you are located in the folder `CIS540Project/SimpleRing` (the same goes for `CIS540Project/Ring`), execute the following:
    ```bash
    dotnet ../../bin/netcoreapp2.1/PSharpTester.dll \
      -test:bin/Debug/netcoreapp2.1/Ring.dll \
@@ -121,3 +125,5 @@ git diff cis540-start --no-prefix > solution.patch
 Along with the patch file, send me the final buggy traces and log files produced by `PSharpTester`.
 
 We will arrange 10--15 minute meetings where you will have a chance to explain your solutions and demonstrate how you test the programs with `PSharpTester`. The demonstration will be worth another 15 points, for a total of possible 40 points for the project.
+
+The project is due on April 1, 2019.
