@@ -1,8 +1,3 @@
----
-title: 'CIS 540 Project: Leader Election in P#'
-author: Filip Niksic
----
-
 CIS 540 Project: Leader Election in P#
 ===
 
