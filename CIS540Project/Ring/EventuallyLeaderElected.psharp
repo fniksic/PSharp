@@ -1,0 +1,31 @@
+using System;
+
+namespace Ring
+{
+    // This monitor encodes a liveness property that a leader should
+    // eventually be elected.
+    internal monitor EventuallyLeaderElected
+    {
+        internal event NotifyLeaderElected;
+
+        // The mechanism to specify liveness properties in P# is using
+        // the 'hot' and 'cold' states. A 'hot' state is the one in which the
+        // monitor waits for the property to become satisfied. When it
+        // receives a notification and the property becomes satisfied, it
+        // transitions into a 'cold' state.
+        //
+        // Whenever an execution finishes with at least one monitor in a
+        // 'hot' state, the P# tester reports that execution as buggy.
+        start hot state WaitingForLeader
+        {
+            // Here we simply transition to the LeaderElected state.
+            on NotifyLeaderElected goto LeaderElected;
+        }
+
+        cold state LeaderElected
+        {
+            // We ignore any additional notifications.
+            ignore NotifyLeaderElected;
+        }
+    }
+}

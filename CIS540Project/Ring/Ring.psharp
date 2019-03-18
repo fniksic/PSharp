@@ -1,0 +1,67 @@
+using System;
+using System.Collections.Generic;
+
+namespace Ring
+{
+    // The machine that initializes the ring.
+    //
+    // Machines in P# are nothing but classes that inherit a particular
+    // class called Microsoft.PSharp.Machine. The P# syntax for defining
+    // a machine (also events, event handlers, etc.) will get translated into
+    // pure C# code during the build process.
+    //
+    // The access modifier 'internal' is a C# modifier that makes the
+    // machine (or more generally, any entity) visible within an assembly
+    // (which is a unit of executable code contained in a single file).
+    // There will be a single assembly generated for our program, so
+    // effectively, 'internal' means public within our program.
+    internal machine Ring
+    {
+        // Here we define a configuration event that carries an array
+        // of integers (node identifiers) as its payload. 
+        internal event Config(NodeIds: int[]);
+
+        // This is the syntax for defining a machine state. The keyword
+        // 'start' means that this state is the initial state of the machine.
+        start state Init
+        {
+            // Upon entering a state, the code contained in the 'entry' block
+            // gets executed.
+            entry
+            {
+                // The event that was passed to the machine during creation
+                // is accessible through the keyword 'trigger'. Here we cast
+                // it to the type Config and extract the array of node identifiers.
+                var nodeIds = (trigger as Config).NodeIds;
+
+                // For each node identifier in the array, we create a machine of
+                // type Node and add it to the list of nodes.
+                var nodes = new List<machine>();
+                for (int i = 0; i < nodeIds.Length; i++)
+                {
+                    nodes.Add(create(Node));
+                }
+
+                // For each node, we send it a configuration event containing
+                // its identifier and a reference to a node to its right.
+                for (int i = 0; i < nodeIds.Length; i++)
+                {
+                    var node = nodes[i];
+                    var nodeId = nodeIds[i];
+                    var rightNode = nodes[(i + 1) % nodeIds.Length];
+
+                    // This is the syntax for sending an event to a node.
+                    // The first argument is the target node, the second one is the
+                    // type of the event, and the rest are event arguments.
+                    send(node, Node.Config, nodeId, rightNode);
+                }
+
+                // The 'raise' keyword is used for raising local events. Events
+                // that are raised are processed before any events pending in the
+                // event queue. Here we raise a special event called 'halt', which
+                // will cause the machine to be terminated.
+                raise(halt);
+            }
+        }
+    }
+}

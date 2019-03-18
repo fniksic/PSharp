@@ -1,0 +1,138 @@
+using System;
+using System.Linq;
+using System.Collections.Generic;
+
+namespace Ring
+{
+    // The machine that implements the logic of the leader election algorithm. 
+    internal machine Node
+    {
+        // We define two events visible to the other machines. The first one
+        // is used by Ring to pass us the configuration, and the second one
+        // is used for communication among nodes.
+        internal event Config(Id: int, RightNode: machine);
+        internal event Message(Id: int);
+        
+        // We define a few local events, which we will use to transition from
+        // state to state.
+        event Start;
+        event Lead;
+        event Follow;
+
+        // fields
+        int MyId;
+        machine RightNode;
+
+        int CurrentId;
+
+        // states
+        start state Init
+        {
+            // This is the syntax for defining how to handle events of different types.
+            // When we receive an event of type Config, we execute the method Configure
+            // defined below. When we receive an event of type Start, we transition to
+            // the state Undecided.
+            on Config do Configure;
+            on Start goto Undecided;
+
+            // We can specify certain events to be deferred. Here we defer events of
+            // type Message, meaning that these events will not be processed in this
+            // state, but they will remain in the event queue to be processed in other
+            // states.
+            defer Message;
+        }
+
+        // Method called upon receiving a Config event in state Init.
+        void Configure()
+        {
+            // The event sent to the machine is acessible using the keyword
+            // 'trigger'. We need to cast the event to the appropriate type to
+            // access the arguments.
+            this.MyId = (trigger as Config).Id;
+            this.RightNode = (trigger as Config).RightNode;
+
+            // We raise the Start event, which will cause a transition to
+            // the Undecided state.
+            raise(Start);
+        }
+
+        state Undecided
+        {
+            entry
+            {
+                // Finally, we get to the logic of the algorithm. We initialize the
+                // field CurrentId and send a message containing it to the node on the right.
+                this.CurrentId = this.MyId;
+
+                // We can use the built-in logger to output messages to the console
+                this.Logger.WriteLine("[Node {0}] My current id is {1}. Sending {1} to the right.",
+                    this.MyId, this.CurrentId);
+                send(this.RightNode, Message, this.CurrentId);
+            }
+
+            on Message do HandleMessage;
+            on Lead goto Leader;
+            on Follow goto Follower;
+        }
+
+        // Method that implements the core of the leader election. Here we
+        // handle a message received from the node to our left.
+        void HandleMessage()
+        {
+            var leftId = (trigger as Message).Id;
+            this.Logger.WriteLine("[Node {0}] Received {1} from the left.", this.MyId, leftId);
+
+            if (leftId > this.CurrentId)
+            {
+                // We update our current id and propagate it to the right.
+                this.CurrentId = leftId;
+                this.Logger.WriteLine("[Node {0}] My current id is {1}. Sending {1} to the right.",
+                    this.MyId, this.CurrentId);
+                send(this.RightNode, Message, this.CurrentId);
+            }
+            else if (leftId == this.CurrentId)
+            {
+                // The same id has made a full cycle around the ring, so we can decide.
+                // We also need to propagate the id to the right for other nodes to decide.
+                this.Logger.WriteLine("[Node {0}] This is second time I see {1}; ready to decide. Sending {1} to the right.",
+                    this.MyId, this.CurrentId);
+                send(this.RightNode, Message, this.CurrentId);
+
+                if (this.CurrentId == this.MyId)
+                {
+                    raise(Lead);
+                }
+                else
+                {
+                    raise(Follow);
+                }
+            }
+        }
+
+        state Leader
+        {
+            entry
+            {
+                this.Logger.WriteLine("[Node {0}] Leading", this.MyId);
+
+                // We notify the monitors that we have decided to lead.
+                monitor<SingleLeaderElected>(SingleLeaderElected.NotifyLeaderElected);
+                monitor<EventuallyLeaderElected>(EventuallyLeaderElected.NotifyLeaderElected);
+            }
+
+            // We ignore any additional Message events in this state. If the algorithm is correctly
+            // implemented, we should not be seing them anyway.
+            ignore Message;
+        }
+
+        state Follower
+        {
+            entry
+            {                
+                this.Logger.WriteLine("[Node {0}] Following", this.MyId);
+            }
+
+            ignore Message;
+        }
+    }
+}

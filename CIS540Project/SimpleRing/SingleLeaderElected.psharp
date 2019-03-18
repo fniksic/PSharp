@@ -1,0 +1,42 @@
+using System;
+
+namespace Ring
+{
+    // A monitor is simply a machine that can receive, but not send
+    // events. We use it to encode a correctness requirement.
+    // This machine encodes a property that at most one node should
+    // decide to lead.
+    internal monitor SingleLeaderElected
+    {
+        // The event NotifyLeaderElected will be sent to us by a node
+        // when it enters the Leader state.
+        internal event NotifyLeaderElected;
+
+        event Start;
+
+        bool LeaderElected;
+
+        start state Init
+        {
+            entry
+            {
+                // We initialize the Boolean variable this.LeaderElected to false
+                // and transition to the monitoring state.
+                this.LeaderElected = false;
+                raise(Start);
+            }
+            on Start goto Monitoring;
+        }
+
+        state Monitoring
+        {
+            on NotifyLeaderElected do
+            {
+                // If we receive the second leader notification, the following
+                // assertion will fail, causing the P# tester to report a buggy execution.
+                assert(!this.LeaderElected, "Multiple leaders elected");
+                this.LeaderElected = true;
+            }
+        }
+    }
+}
