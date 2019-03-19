@@ -36,7 +36,7 @@ The simpler version of the algorithm is implemented in the folder `CIS540Project
 Your first task will be to study the code to familiarize yourself with the syntax and the structure of a P# program. Then you will build the program, run it to see the output, and test it with `PSharpTester`.
 
 Once you understand `SimpleRing`, we are ready to proceed to the more interesting version of the algorithm in which $n$ nodes are guaranteed to exchange at most $O(n \log n)$ messages.
-Recall that the algorithm works in phases. At the beginning of each phase, a node is either a follower or it is undecided. A follower acts as a relay: it relays a message received from the node to its left to the node to its right. An undecided node receives identifiers from two undecided nodes to its left (possibly through a sequence of relays); let us call these nodes the left node and the leftmost node. If the left node's identifier equals the receiving node's current identifier, that means the receiving node is the only undecided node in the ring, so it elects itself as the leader. Otherwise the receiving node compares the two received identifiers to its current identifier. If the left node's identifier is the highest of the three, the receiving node stores it as its current identifier, sends it to the node to its right, and proceeds to the next phase as an undecided node. Otherwise the receiving node becomes a follower. Initially all nodes are undecided and they initiate the protocol by sending their identifiers to the right.
+Recall that the algorithm works in phases. At the beginning of each phase, a node is either a follower or it is undecided. A follower acts as a relay: it relays a message received from the node to its left to the node to its right. An undecided node receives identifiers from two undecided nodes to its left (possibly through a sequence of relays); let us call these nodes the left node and the leftmost node. If the left node's identifier equals the receiving node's current identifier, that means the receiving node is the only undecided node in the ring, so it elects itself as a leader. Otherwise the receiving node compares the two received identifiers to its current identifier. If the left node's identifier is the highest of the three, the receiving node stores it as its current identifier, sends it to the node to its right, and proceeds to the next phase as an undecided node. Otherwise the receiving node becomes a follower. Initially all nodes are undecided and they initiate the protocol by sending their identifiers to the right.
 
 The initial implementation is located in the folder `CIS540Project/Ring`. As before, I recommend opening the folder as a workspace in Visual Studio Code. The structure of the project is the same as for `SimpleRing`.
 
@@ -76,25 +76,31 @@ The algorithm from the previous section clearly does not tolerate failures: even
 
 The algorithm assumes a fully connected network of nodes. Additionally, it assumes that each node knows the total number of nodes in the system. Intuitively, the nodes will try to reach a _quorum_---a situation in which a majority of nodes (i.e., more than a half) decides on the same leader. The idea behind this is that even if some nodes fail, there is still a majority that will continue making progress and finally elect a leader. Theoretically, if there are $2f+1$ nodes in the system, the algorithm should tolerate failures of up to $f$ nodes.
 
-In order to reach a quorum, the nodes execute the following protocol. Initially, they propose themselves as leaders and broadcast their votes to their peers. While a node is undecided, each time it receives a vote from an undecided peer, it updates its vote if the peer proposed a leader with a higher identifier. If they receive a vote from a peer that has already decided whom to elect, they blindly believe them and update their vote correspondingly even if the peer voted for a node with a lower identifier. If a node ever updates its vote, it  broadcasts the new vote to its peers. During the execution, each node maintains a view of its knowledge about the votes of its peers. If at any point a node detects that according to its view the nodes have reached a quorum, it decides on the leader supported by the quorum. In the decided state, the node never updates its vote, and thus it never broadcasts it. However, if it receives a vote from an undecided peer, it informs the peer of its decision.
+In order to reach a quorum, the nodes execute the following protocol. Initially, they propose themselves as leaders and broadcast their votes to their peers. While a node is undecided, each time it receives a vote from an undecided peer, it updates its vote if the peer proposed a leader with a higher identifier. If it receives a vote from a peer that has already decided whom to elect, it blindly believes the peer and updates its vote correspondingly even if the peer voted for a node with a lower identifier. If a node ever updates its vote, it  broadcasts the new vote to its peers. During the execution, each node maintains a view of its knowledge about the votes of its peers. If at any point a node detects that its choice for a leader is supported by a quorum, it decides on that leader. In the decided state, the node never updates its vote, and thus it never broadcasts it. However, if it receives a vote from an undecided peer, it informs the peer of its decision.
 
-The described algorithm is implemented in the folder `CIS540Project/Quorum`. As before, the execution starts in the file `Program.cs` in the function `Main`. The function initializes a P# runtime and starts a machine of type `Cluster`, which in turn starts several machines of type `Node`. There are again two monitors---`SingleLeaderElected` and `EventuallyLeaderElected`---to ensure election safety and progress.
+The described algorithm is partially implemented in the folder `CIS540Project/Quorum`. As before, the execution starts in the file `Program.cs` in the function `Main`. The function initializes a P# runtime and starts a machine of type `Cluster`, which in turn starts several machines of type `Node`. There are again two monitors---`SingleLeaderElected` and `EventuallyLeaderElected`---to ensure election safety and progress.
 
 **Your task (15 points):**
 
-1. Study the code to understand how it works. Then try to test the program with the P# tester:
+1. Study the code to understand how it works.
+
+2. Some parts of the algorithm are missing. Specifically, look at method `HandleVote()` and fill in the missing parts.
+
+3. Build the program and run it. In the most common case, you should observe that the nodes correctly elect the node with the highest identifier as a leader.
+
+4. Now try to test the program with the P# tester. Make sure to test with a sufficiently high number of iterations:
    ```bash
    dotnet ../../bin/netcoreapp2.1/PSharpTester.dll \
      -test:bin/Debug/netcoreapp2.1/Quorum.dll \
-     -i:10
+     -i:1000
    ```
-   You should observe that it quickly fails. Analyze the output produced by the tester---you are likely to see that two nodes declared themselves as the leader.
+   You should observe that the program fails. Analyze the output produced by the tester---you are likely to see that two nodes declared themselves as leaders.
 
-2. The reason for the failure is that our monitors do not properly encode our new correctness requirement. Recall that a node is the leader only if it is supported by a quorum. A scenario that should be allowed is that one node elects itself and fails, and the other two proceed by electing a leader among themselves.
+5. The reason for the failure is that our monitors do not properly encode our new correctness requirement. Recall that a node is a leader only if it is supported by a quorum. A scenario that should be allowed is that one node elects itself and fails, and the other two proceed by electing a leader among themselves.
 
-   Update the monitors to reflect the updated correctness requirement. In `SingleLeaderElected` simply comment out the assertion since we want to allow multiple nodes to declare themselves as leaders. In `EventuallyLeaderElected` we do not want to transition to the "cold" state as soon as we see the first node declaring themselves as the leader. Instead, the monitor should only transition if the self-declared leader is supported by a quorum.
+   Update the monitors to reflect the updated correctness requirement. In `SingleLeaderElected` simply comment out the assertion since we want to allow multiple nodes to declare themselves as leaders. In `EventuallyLeaderElected` we do not want to transition to the "cold" state as soon as we see the first node declaring themselves as a leader. Instead, the monitor should only transition if the self-declared leader is supported by a quorum.
 
-3. Is the program now correct? Try to increase the number of nodes to 5 and test it more thoroughly, with higher number of iterations. Instead of the random scheduler, you may want to try FairPCT with the priority switch bound of 4:
+6. Is the program now correct? Test it with a high number of iterations. Instead of the random scheduler, you may want to try FairPCT with the priority switch bound of 4:
    ```bash
    dotnet ../../bin/netcoreapp2.1/PSharpTester.dll \
      -test:bin/Debug/netcoreapp2.1/Quorum.dll \
@@ -106,11 +112,11 @@ The described algorithm is implemented in the folder `CIS540Project/Quorum`. As 
 
 **Optional tasks:**
 
-4. As the previous task shows, there is a reason for the added complexity of the complete Fast Leader Election. You can read about the complete algorithm in a technical report by André Medeiros: [ZooKeeper's atomic broadcast protocol: Theory and practice](http://www.tcs.hut.fi/Studies/T-79.5001/reports/2012-deSouzaMedeiros.pdf). If you feel ambitious, implement the complete Fast Leader Election and test it with the P# tester. You may want to consult the [source code of Apache Zookeeper](https://github.com/apache/zookeeper/blob/master/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java).
+7. As the previous task shows, there is a reason for the added complexity of the complete Fast Leader Election. You can read about the complete algorithm in a technical report by André Medeiros: [ZooKeeper's atomic broadcast protocol: Theory and practice](http://www.tcs.hut.fi/Studies/T-79.5001/reports/2012-deSouzaMedeiros.pdf). If you feel ambitious, implement the complete Fast Leader Election and test it with the P# tester. You may want to consult the [source code of Apache Zookeeper](https://github.com/apache/zookeeper/blob/master/zookeeper-server/src/main/java/org/apache/zookeeper/server/quorum/FastLeaderElection.java).
 
-5. The nodes in our program do not exactly fail. Try to model node crashes using an additional machine that will nondeterministically send `halt` events to the nodes. You may find timers useful for this (see `Docs/Features/Timers.md`), as well as machine methods `bool Random()` and `int Random(int maxValue)`.
+8. The nodes in our program do not exactly fail. Try to model node crashes using an additional machine that will nondeterministically send `halt` events to the nodes. You may find timers useful for this (see `Docs/Features/Timers.md`), as well as machine methods `bool Random()` and `int Random(int maxValue)`.
 
-6. One might ask: if the nodes in the original program never fail, then why should we ever see nodes deciding they are leaders without a quorum? Strengthen the monitors to also require that in the case of no failures a single node should be elected and supported by all nodes in the system. Test the complete Fast Leader Election with this specification. Can you find bugs?
+9. One might ask: if the nodes in the original program never fail, then why should we ever see nodes deciding they are leaders without a quorum? Strengthen the monitors to also require that in the case of no failures a single node should be elected and supported by all nodes in the system. Test the complete Fast Leader Election with this specification. Can you find bugs?
 
 Completing the Project
 ---
