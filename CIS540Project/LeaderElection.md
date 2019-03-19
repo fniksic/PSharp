@@ -121,7 +121,7 @@ The described algorithm is partially implemented in the folder `CIS540Project/Qu
 Completing the Project
 ---
 
-Once you are done with the project, send me the changes you made to the source code. The most elegant way to do this is to commit your changes in git and generate a diff:
+You may work on the project in pairs. Once you are done, send me the changes you made to the source code. The most elegant way to do this is to commit your changes in git and generate a diff:
 
 ```bash
 git commit -am "Solve all tasks"
