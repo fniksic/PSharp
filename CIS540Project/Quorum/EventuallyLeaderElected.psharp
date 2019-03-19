@@ -1,0 +1,62 @@
+using System;
+using System.Collections.Generic;
+
+namespace Quorum
+{
+    // This monitor encodes a property that at least one leader should be elected.
+    internal monitor EventuallyLeaderElected
+    {
+        event Unit;
+
+        int ClusterSize;
+        Dictionary<int, int> FinalElectionVotes;
+
+        // In the starting state, we initialize the cluster size and the map
+        // that will store the final election votes.
+        start state Init
+        {
+            on Config do Configure;
+            on Unit goto WaitingForLeader;
+        }
+
+        void Configure()
+        {
+            this.ClusterSize = (trigger as Config).ClusterSize;
+            this.FinalElectionVotes = new Dictionary<int, int>();
+            raise(Unit);
+        }
+
+        // The hot state of the monitor; we are waiting for a leader to
+        // be elected.
+        hot state WaitingForLeader
+        {
+            on NotifyDecision do ProcessDecision;
+            on Unit goto LeaderElected;
+        }
+
+        void ProcessDecision()
+        {
+            var nodeId = (trigger as NotifyDecision).NodeId;
+            var leaderId = (trigger as NotifyDecision).LeaderId;
+
+            // Currently, we transition to the cold state as soon as we receive
+            // a notification from a node that has elected itself. Instead, we should
+            // store the vote to the map of final election votes and check
+            // for quorum. We should transition to the cold state only if the proposed
+            // leader has a majority of votes.
+
+            // TODO: Change the following code according to the comment. You may find
+            //       the method QuorumUtil.CheckQuorum() useful.
+            if (nodeId == leaderId)
+            {
+                raise(Unit);
+            }
+        }
+
+        cold state LeaderElected
+        {
+            // The property is satisfied; we ignore further notifications.
+            ignore NotifyDecision;
+        }
+    }
+}

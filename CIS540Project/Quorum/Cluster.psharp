@@ -1,0 +1,42 @@
+using System;
+using System.Collections.Generic;
+
+namespace Quorum
+{
+    // The machine that initializes a cluster of nodes. It is configured
+    // using an event of type Config, which is defined in a separate file
+    // (Events.psharp).
+    internal machine Cluster
+    {
+        // The machine has a single state in which it initializes the
+        // cluster and halts.
+        start state Init
+        {
+            entry
+            {
+                var totalNodes = (trigger as Config).ClusterSize;
+
+                // We also need to configure the liveness monitor by
+                // sending it a Config event.
+                monitor<EventuallyLeaderElected>(Config, totalNodes);
+                
+                // Create the nodes.
+                var nodes = new List<machine>();
+                for (int idx = 0; idx < totalNodes; idx++)
+                {
+                    nodes.Add(create(Node));
+                }
+
+                // Configure the nodes by sending them their identifier
+                // and the list of all nodes.
+                for (int idx = 0; idx < totalNodes; idx++)
+                {
+                    send(nodes[idx], Node.Config, idx, nodes);
+                }
+
+                // Terminate the machine by raising the special halt event.
+                raise(halt);
+            }
+        }
+    }
+}

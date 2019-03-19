@@ -1,0 +1,38 @@
+using System;
+
+namespace Quorum
+{
+    // This monitor encodes the property that at most one leader should be elected.
+    internal monitor SingleLeaderElected
+    {
+        // LeaderId is the identifier of the node that was first to declare itself as a leader.
+        // The type int? is a shorthand for Nullable<int>; it is an integer that can also be null.
+        int? LeaderId;
+
+        start state Monitoring
+        {
+            entry
+            {
+                this.LeaderId = null;
+            }
+            on NotifyDecision do ProcessDecision;
+        }
+
+        void ProcessDecision()
+        {
+            var nodeId = (trigger as NotifyDecision).NodeId;
+            var leaderId = (trigger as NotifyDecision).LeaderId;
+            if (nodeId == leaderId)
+            {
+                // The node has elected itself for a leader. If this is the second node to
+                // do so, the following assertion will fail. However, according to the new
+                // specification, such a situation should no longer be dissalowed.
+
+                // TODO: Comment out the assertion.
+                assert(!this.LeaderId.HasValue, "Multiple leaders: " + this.LeaderId + " " + leaderId);
+                
+                this.LeaderId = leaderId;
+            }
+        }
+    }
+}

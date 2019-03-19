@@ -1,0 +1,156 @@
+using System;
+using System.Collections.Generic;
+
+namespace Quorum
+{
+    // The machine that implements the logic of the leader election algorithm.
+    internal machine Node
+    {
+        // The event used by the Cluster machine to pass us configuration.
+        internal event Config(Id: int, Nodes: List<machine>);
+        
+        // The event used to communicate votes between nodes.
+        internal event Vote(SenderId: int, SenderIsLooking: bool, ProposedLeaderId: int);
+        
+        // local events
+        event Start;
+        event Decide;
+
+        // fields
+        int MyId;
+        List<machine> Nodes;
+
+        // LeaderId is the node's current leader proposal, or the final decision in
+        // the Decided state.
+        int LeaderId;
+
+        // IsLooking is true if the node is still looking for a leader (that is, it is undecided).
+        bool IsLooking;
+
+        // ElectionVotes is the node's current view of the votes of all the nodes in the system.
+        Dictionary<int, int> ElectionVotes;
+
+        // In the starting state the node receives its configuration.
+        start state Init
+        {
+            on Config do Configure;
+            on Start goto Looking;
+
+            // We defer events of type Votes for later processing.
+            defer Vote;
+        }
+
+        void Configure()
+        {
+            this.MyId = (trigger as Config).Id;
+            this.Nodes = (trigger as Config).Nodes;
+            raise(Start);
+        }
+        
+        // The state in which the node is undecided---it is looking for a leader.
+        state Looking
+        {
+            entry
+            {
+                this.IsLooking = true;
+                this.ElectionVotes = new Dictionary<int, int>();
+
+                // Propose myself as the leader.
+                this.LeaderId = this.MyId;
+                this.ElectionVotes[this.MyId] = this.MyId;
+                BroadcastVote();
+
+                // If I am the sole node in the system, immediately decide.
+                if (this.Nodes.Count == 1)
+                {
+                    raise(Decide);
+                }
+            }
+
+            on Vote do HandleVote;
+            on Decide goto Decided;
+        }
+
+        void HandleVote()
+        {
+            // We extract the event's payload.
+            var vote = trigger as Vote;
+            var senderId = vote.SenderId;
+            var senderIsLooking = vote.SenderIsLooking;
+            var proposedLeaderId = vote.ProposedLeaderId;
+
+            // We log the received vote on the console.
+            this.Logger.WriteLine("[Node {0}] Handling Vote({1}, {2}, {3})",
+                this.MyId, senderId, senderIsLooking, proposedLeaderId);
+
+            // We update our proposal if either of the following is true:
+            // - The sender is also looking and it is proposing a leader
+            //   with a higher identifier.
+            // - The sender has decided (i.e. it is not looking), and its
+            //   proposal is different than ours.
+            // If we update our proposal, we need to broadcast our new vote.
+            
+            // TODO: Add the missing part described in the comment.
+
+            // We store the sender's vote in our view of the votes in the system.
+            this.ElectionVotes[senderId] = proposedLeaderId;
+
+            // We check for quorum according to our view of the votes. If a majority
+            // of nodes voted for the leader proposed by us, we stop looking and transition
+            // to the Decided state.
+            
+            // TODO: Add the missing part. You may find the method
+            //       QuorumUtil.CheckQuorum() useful.
+        }
+
+        void BroadcastVote()
+        {
+            this.Logger.WriteLine("[Node {0}] Broadcasting Vote({0}, {1}, {2})",
+                this.MyId, this.IsLooking, this.LeaderId);
+            for (int idx = 0; idx < this.Nodes.Count; idx++)
+            {
+                if (idx != this.MyId)
+                {
+                    this.Logger.WriteLine("[Node {0}] Sending Vote({0}, {1}, {2}) to {3}",
+                        this.MyId, this.IsLooking, this.LeaderId, idx);
+                    send(this.Nodes[idx], Vote, this.MyId, this.IsLooking, this.LeaderId);
+                }
+            }
+        }
+
+        state Decided
+        {
+            entry
+            {
+                // We log our decision on the console.
+                if (this.MyId == this.LeaderId)
+                {
+                    this.Logger.WriteLine("[Node {0}] Leading", this.MyId);
+                }
+                else
+                {
+                    this.Logger.WriteLine("[Node {0}] Following {1}", this.MyId, this.LeaderId);
+                }
+
+                // We notify the monitors of our decision.
+                monitor<SingleLeaderElected>(NotifyDecision, this.MyId, this.LeaderId);
+                monitor<EventuallyLeaderElected>(NotifyDecision, this.MyId, this.LeaderId);
+            }
+
+            on Vote do
+            {
+                var vote = trigger as Vote;
+                this.Logger.WriteLine("[Node {0}] Handling Vote({1}, {2}, {3}) in Decided state",
+                    this.MyId, vote.SenderId, vote.SenderIsLooking, vote.ProposedLeaderId);
+
+                // We inform a sender that is still looking about our decision for the leader.
+                if (vote.SenderIsLooking)
+                {
+                    this.Logger.WriteLine("[Node {0}] Sending Vote({0}, False, {1}) to {2}",
+                        this.MyId, this.LeaderId, vote.SenderId);
+                    send(this.Nodes[vote.SenderId], Vote, this.MyId, false, this.LeaderId);
+                }
+            }
+        }
+    }
+}

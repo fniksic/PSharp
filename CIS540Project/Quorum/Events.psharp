@@ -1,0 +1,6 @@
+namespace Quorum
+{
+    // Events shared by multiple machines.
+    internal event Config(ClusterSize: int);
+    internal event NotifyDecision(NodeId: int, LeaderId: int);
+}
