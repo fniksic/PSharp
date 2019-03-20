@@ -98,7 +98,7 @@ The described algorithm is partially implemented in the folder `CIS540Project/Qu
 
 5. The reason for the failure is that our monitors do not properly encode our new correctness requirement. Recall that a node is a leader only if it is supported by a quorum. A scenario that should be allowed is that one node elects itself and fails, and the other two proceed by electing a leader among themselves.
 
-   Update the monitors to reflect the updated correctness requirement. In `SingleLeaderElected` simply comment out the assertion since we want to allow multiple nodes to declare themselves as leaders. In `EventuallyLeaderElected` we do not want to transition to the "cold" state as soon as we see the first node declaring themselves as a leader. Instead, the monitor should only transition if the self-declared leader is supported by a quorum.
+   Update the monitors to reflect the updated correctness requirement. In `SingleLeaderElected` simply comment out the assertion since we want to allow multiple nodes to declare themselves as leaders. In `EventuallyLeaderElected` we do not want to transition to the "cold" state as soon as we see the first node declaring themselves as a leader. Instead, the monitor should transition if the node whose identifier is `leaderId` had indeed voted for itself, and if it is supported by a quorum.
 
 6. Is the program now correct? Test it with a high number of iterations. Instead of the random scheduler, you may want to try FairPCT with the priority switch bound of 4:
    ```bash

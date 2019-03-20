@@ -41,7 +41,8 @@ namespace Quorum
 
             // Currently, we transition to the cold state as soon as we receive
             // a notification from a node that has elected itself. Instead, we should
-            // store the vote to the map of final election votes and check
+            // store the vote to the map of final election votes, check if the node whose
+            // identifier is leaderId had indeed voted for itself, and check
             // for quorum. We should transition to the cold state only if the proposed
             // leader has a majority of votes.
 
