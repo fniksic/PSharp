@@ -34,7 +34,7 @@ namespace Microsoft.PSharp
 
             // Parse the first argument: csVersion (we also allow "?", "h", "help")
             var csVersion = new Version(0, 0);
-            if (args[0].StartsWith('/') || args[0].StartsWith('-'))
+            if (args[0].StartsWith("/") || args[0].StartsWith("-"))
             {
                 var parts = args[0].Substring(1).Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
                 switch (parts[0].ToLower())
